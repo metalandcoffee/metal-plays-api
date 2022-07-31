@@ -8,7 +8,7 @@ import { Buffer } from 'buffer';
  * @param  {number} length The length of the string
  * @return {string} The generated string
  */
-const generateRandomString = length => {
+const generateRandomString = ( length ) => {
 	let text = '';
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 	for (let i = 0; i < length; i++) {
@@ -49,7 +49,7 @@ app.get('/login', (req, res) => {
 // Spotify Callback route handler.
 app.get('/callback', async (req, res) => {
 	// Extract URL Params.
-	const { code, state } = req.query.code;
+	const { code, state } = req.query;
 	// @todo verify state parameter matches
 
 	// Create fetch requests parameters.
@@ -69,10 +69,11 @@ app.get('/callback', async (req, res) => {
 	if ( 200 !== response.status) {
 		console.log(response);
 		res.send(`Status: ${response.status}. Try Again Later.`);
-		return;
+		//return;
 	}
 	const data = await response.json();
 	const { access_token, token_type } = data;
+	console.log(data);
 
 	// Get information from Spotify using access token!
 	const genreResponse = await fetch('https://api.spotify.com/v1/recommendations/available-genre-seeds', {
