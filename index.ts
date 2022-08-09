@@ -87,7 +87,7 @@ app.get('/api/played', async (req, res) => {
 
 // Login page route handler.
 app.get('/login', (req, res) => {
-	//res.send('Login endpoint disabled');
+	res.send('Login endpoint disabled');
 
 	const scope = 'user-read-currently-playing user-read-recently-played';
 	state = generateRandomString(16);
