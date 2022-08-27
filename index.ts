@@ -42,7 +42,8 @@ const getTokenFromSpotify = async (res, params) => {
 		},
 	});
 	if (200 !== response.status) {
-		res.send(`Status: ${response.status}. Try Again Later.`);
+		res.send(`Status: ${response.status}. ${response.statusText}. Try Again Later.`);
+		throw 'StatusException';
 	}
 
 	const data = await response.json() as {
@@ -102,13 +103,19 @@ app.get('/api/played', async (req, res) => {
 				grant_type: 'refresh_token',
 				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
 			}).toString();
-		const data = await getTokenFromSpotify(res, params) as {
-			access_token: string,
-			token_type: string,
-			refresh_token: string,
-		};
+			try {
+				const data = await getTokenFromSpotify(res, params) as {
+					access_token: string,
+					token_type: string,
+					refresh_token: string,
+				};
+			} catch(e) {
+				console.log(e);
+				return;
+			}
 
-		const { access_token, token_type, refresh_token } = data;
+
+		//const { access_token, token_type, refresh_token } = data;
 
 	}
 
