@@ -1,4 +1,10 @@
-Metal Plays API BFF (Backend for Frontend) or Proxy
+# Metal Plays Proxy/BFF (Backend for Frontend)
+
+The Metal Plays BFF layer serves as a dedicated and simplified access point for a Spotify user's currenty playing and recently played tracks.
+
+This BFF uses the Spotify API and the Authorization Code workflow to prompt the user for authorization and access before making the `api/played` and `api/current` endpoint available.
+
+### Scratch Notes
 
 Possible solutions for needing to grab current access token (without re-requesting it from Spotify server when its not expired yet)
 - Saving tokens to database
