@@ -4,3 +4,4 @@ node_modules
 dist
 index.js
 secrets.json
+secrets_expired.json
