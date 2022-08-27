@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
+import { resolveSoa } from 'dns';
 
 // Import environment variables.
 dotenv.config();
@@ -27,10 +28,10 @@ const generateRandomString = (length) => {
 };
 
 /**
- * 
- * @param res 
- * @param params 
- * @returns 
+ * Get new access token from Spotify.
+ * @param {object} res 
+ * @param {string} params 
+ * @returns {object}
  */
 const getTokenFromSpotify = async (res, params) => {
 	// Get access token from Spotify.
@@ -39,11 +40,13 @@ const getTokenFromSpotify = async (res, params) => {
 		body: params,
 		headers: {
 			'Authorization': `Basic ${Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64')}`,
+			'Content-Type': 'application/x-www-form-urlencoded'
 		},
 	});
 	if (200 !== response.status) {
+		console.log(`fail`, params);
 		res.send(`Status: ${response.status}. ${response.statusText}. Try Again Later.`);
-		throw 'StatusException';
+		throw `Status: ${response.status}. ${response.statusText}. Try Again Later.`;
 	}
 
 	const data = await response.json() as {
@@ -57,7 +60,25 @@ const getTokenFromSpotify = async (res, params) => {
 	return { access_token, token_type, refresh_token };
 }
 
+/**
+ * 
+ */
+const getRecentlyPlayed = async (access_token, token_type) => {
+	// Get information from Spotify using access token.
+	const response = await fetch('https://api.spotify.com/v1/me/player/recently-played', {
+		headers: { Authorization: `${token_type} ${access_token}` }
+	});
 
+	const data = await response.json() as {
+		items: any[],
+		error: {
+			status: number,
+			message: string
+		}
+	};
+
+	return data;
+}
 
 // Index page route handler.
 app.get('/', (req, res) => {
@@ -77,45 +98,39 @@ app.get('/api/current', (req, res) => {
 app.get('/api/played', async (req, res) => {
 
 	// Grab access token from file.
-	const data = fs.readFileSync('secrets.json', 'utf8');
+	const data = fs.readFileSync('secrets_expired.json', 'utf8');
 	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
 	const { access_token, token_type } = dataObj;
-
-	// Get information from Spotify using access token.
-	const response = await fetch('https://api.spotify.com/v1/me/player/recently-played', {
-		headers: { Authorization: `${token_type} ${access_token}` }
-	});
-	const spotifyJSON = await response.json() as {
-		items: any[],
-		error: {
-			status: number,
-			message: string
-		}
-	};
+	const spotifyData = await getRecentlyPlayed(access_token, token_type);
+	console.log(spotifyData);
+	//@todo 8/27/2022 You left off working through getting the new function getRecentlyPlayed set up and properly called throughout this endpoint.
+	return;
 
 	// If token is expired...
-	// { error: { status: 401, message: 'The access token expired' } }
+	/**
 	if (spotifyJSON.error) {
-		// @todo request a new token.
+		console.log(spotifyJSON);
+
 		// call refresh_token route with refresh token URL param
 		const params = new URLSearchParams(
 			{
 				grant_type: 'refresh_token',
 				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
 			}).toString();
-			try {
-				const data = await getTokenFromSpotify(res, params) as {
-					access_token: string,
-					token_type: string,
-					refresh_token: string,
-				};
-			} catch(e) {
-				console.log(e);
-				return;
-			}
+		try {
+			const data = await getTokenFromSpotify(res, params) as {
+				access_token: string,
+				token_type: string,
+				refresh_token: string,
+			};
+		} catch (e) {
+			res.send(e);
+		}
 
-
-		//const { access_token, token_type, refresh_token } = data;
+		console.log(`new access token acquired`);
+		// Save access token to database.
+		// Query for recently played tracks again with new access token
+		return; //tmp
 
 	}
 
@@ -146,7 +161,7 @@ app.get('/api/played', async (req, res) => {
 			spotifyURL: track.context.external_urls.spotify,
 		};
 	});
-	res.send(formattedJSON);
+	res.send(formattedJSON);*/
 });
 
 // Login page route handler.
