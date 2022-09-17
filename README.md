@@ -2,7 +2,7 @@
 
 The Metal Plays BFF layer serves as a dedicated and simplified access point for a Spotify user's currenty playing and recently played tracks.
 
-This BFF uses the Spotify API and the Authorization Code workflow to prompt the user for authorization and access before making the `api/played` and `api/current` endpoint available.
+This BFF uses the Spotify API and the Authorization Code workflow to prompt the user for authorization and access before making the `played` and `current` endpoint available.
 
 ### Scratch Notes
 

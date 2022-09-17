@@ -53,15 +53,21 @@ const getTokenFromSpotify = async (res, params) => {
 		access_token: string,
 		token_type: string,
 		refresh_token: string,
+		expires_in: number,
 	};
 
-	const { access_token, token_type, refresh_token } = data;
+	const { access_token, token_type, refresh_token, expires_in } = data;
 
-	return { access_token, token_type, refresh_token };
+	return { access_token, token_type, refresh_token, expires_in };
 }
 
 /**
+ * Get recently played tracks from Spotify user account.
  * 
+ * @param {string} access_token Token to access data.
+ * @param {string} token_type   How the Access Token may be used: always “Bearer”.
+ * 
+ * @return {object} Recently played songs.
  */
 const getRecentlyPlayed = async (access_token, token_type) => {
 	// Get information from Spotify using access token.
@@ -69,15 +75,40 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 		headers: { Authorization: `${token_type} ${access_token}` }
 	});
 
-	const data = await response.json() as {
-		items: any[],
+	const JSON = await response.json() as {
+		items: Array<{
+			track: {
+				album: {
+					artists: Array<{
+						name: string,
+					}>
+				},
+				name: string,
+				preview_url: string,
+			},
+			name: string,
+			played_at: string,
+		}>,
 		error: {
 			status: number,
 			message: string
 		}
 	};
 
-	return data;
+	if (JSON.error && 401 === JSON.error.status) {
+		return JSON;
+	}
+
+	// Format the data to look pretty.
+	const formattedJSON = JSON.items.map(track => {
+		return {
+			artists: track.track.album.artists.map(artist => artist.name),
+			trackName: track.track.name,
+			playtime: track.played_at,
+			songPreviewURL: track.track.preview_url,
+		};
+	});
+	return formattedJSON;
 }
 
 // Index page route handler.
@@ -88,80 +119,48 @@ app.get('/', (req, res) => {
 /**
  * Currently Playing Track route handler.
  */
-app.get('/api/current', (req, res) => {
+app.get('/current', (req, res) => {
 	res.send('Under construction...');
 });
 
 /**
  * Recently Played Tracks route handler.
  */
-app.get('/api/played', async (req, res) => {
+app.get('/played', async (req, res) => {
 
 	// Grab access token from file.
 	const data = fs.readFileSync('secrets_expired.json', 'utf8');
 	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
-	const { access_token, token_type } = dataObj;
-	const spotifyData = await getRecentlyPlayed(access_token, token_type);
-	console.log(spotifyData);
-	//@todo 8/27/2022 You left off working through getting the new function getRecentlyPlayed set up and properly called throughout this endpoint.
-	return;
+	let { access_token, token_type } = dataObj;
+	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
 
-	// If token is expired...
-	/**
-	if (spotifyJSON.error) {
-		console.log(spotifyJSON);
+	console.log(recentlyPlayedData);
 
-		// call refresh_token route with refresh token URL param
+	// If access token is expired, request new one.
+	if (recentlyPlayedData.error && 401 === recentlyPlayedData.error.status) {
+		console.log(recentlyPlayedData.error.message);
 		const params = new URLSearchParams(
 			{
 				grant_type: 'refresh_token',
 				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
 			}).toString();
 		try {
-			const data = await getTokenFromSpotify(res, params) as {
+			const refreshAccessData = await getTokenFromSpotify(res, params) as {
 				access_token: string,
 				token_type: string,
 				refresh_token: string,
+				expires_in: number,
 			};
+			let { access_token, token_type } = refreshAccessData;
+			recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+			console.log(`/played endpoint`, recentlyPlayedData);
 		} catch (e) {
 			res.send(e);
 		}
-
 		console.log(`new access token acquired`);
-		// Save access token to database.
-		// Query for recently played tracks again with new access token
-		return; //tmp
-
 	}
 
-	// Format the data to look pretty.
-	const tracks: Array<{
-		track: {
-			album: {
-				artists: Array<{
-					name: string,
-				}>
-			},
-			name: string,
-			preview_url: string,
-		},
-		name: string,
-		played_at: string,
-		context: {
-			external_urls: { spotify: string }
-		}
-	}> = spotifyJSON.items;
 
-	const formattedJSON = tracks.map(track => {
-		return {
-			artists: track.track.album.artists.map(artist => artist.name),
-			trackName: track.track.name,
-			playtime: track.played_at,
-			songPreviewURL: track.track.preview_url,
-			spotifyURL: track.context.external_urls.spotify,
-		};
-	});
-	res.send(formattedJSON);*/
 });
 
 // Login page route handler.
