@@ -75,7 +75,7 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 		headers: { Authorization: `${token_type} ${access_token}` }
 	});
 
-	const JSON = await response.json() as {
+	const tracksJsonObj = await response.json() as {
 		items: Array<{
 			track: {
 				album: {
@@ -95,12 +95,12 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 		}
 	};
 
-	if (JSON.error && 401 === JSON.error.status) {
-		return JSON;
+	if (tracksJsonObj.error && 401 === tracksJsonObj.error.status) {
+		return tracksJsonObj;
 	}
 
 	// Format the data to look pretty.
-	const formattedJSON = JSON.items.map(track => {
+	const formattedJSON = tracksJsonObj.items.map(track => {
 		return {
 			artists: track.track.album.artists.map(artist => artist.name),
 			trackName: track.track.name,
@@ -134,11 +134,8 @@ app.get('/played', async (req, res) => {
 	let { access_token, token_type } = dataObj;
 	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
 
-	console.log(recentlyPlayedData);
-
 	// If access token is expired, request new one.
-	if (recentlyPlayedData.error && 401 === recentlyPlayedData.error.status) {
-		console.log(recentlyPlayedData.error.message);
+	if ('error' in recentlyPlayedData) {
 		const params = new URLSearchParams(
 			{
 				grant_type: 'refresh_token',
@@ -153,14 +150,11 @@ app.get('/played', async (req, res) => {
 			};
 			let { access_token, token_type } = refreshAccessData;
 			recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-			console.log(`/played endpoint`, recentlyPlayedData);
+			res.send(recentlyPlayedData);
 		} catch (e) {
 			res.send(e);
 		}
-		console.log(`new access token acquired`);
 	}
-
-
 });
 
 // Login page route handler.
