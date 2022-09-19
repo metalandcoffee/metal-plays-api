@@ -1,7 +1,7 @@
 {
-  "name": "newline-spotify-app",
+  "name": "metal-plays-api",
   "version": "1.0.0",
-  "homepage": "https://www.newline.co/courses/build-a-spotify-connected-app/development-environment-setup",
+  "homepage": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
