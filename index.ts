@@ -109,6 +109,16 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 	return formattedJSON;
 }
 
+const getCurrentTrack = async (access_token, token_type) => {
+	// Get information from Spotify using access token.
+	const response = await nodeFetch('https://api.spotify.com/v1/me/player/currently-playing', {
+		headers: { Authorization: `${token_type} ${access_token}` }
+	});
+
+	const trackJsonObj = await response.json();
+	console.log(trackJsonObj);
+}
+
 // Index page route handler.
 app.get('/', (req, res) => {
 	res.send('Welcome to Metal Plays API!');
@@ -131,6 +141,7 @@ app.get('/played', async (req, res) => {
 	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
 	let { access_token, token_type } = dataObj;
 	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+	console.log(recentlyPlayedData);
 
 	// If access token is expired, request new one.
 	if ('error' in recentlyPlayedData) {
