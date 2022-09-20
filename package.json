@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "homepage": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon index.ts",
     "build": "npx tsc index.ts"
   },
