@@ -1,4 +1,4 @@
-import express from 'express';
+import * as express from 'express';
 import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import { Buffer } from 'buffer';
@@ -212,5 +212,5 @@ app.get('/callback', async (req, res) => {
 
 // Tell Express to listen for a connection on the specified port.
 app.listen(port, () => {
-	console.log(`Express app listening at http://localhost:${port}`);
+	console.log(`Express app listening...`);
 });
