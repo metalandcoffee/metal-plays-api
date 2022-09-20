@@ -127,42 +127,48 @@ app.get('/', (req, res) => {
 /**
  * Currently Playing Track route handler.
  */
-app.get('/current', (req, res) => {
-	res.send('Under construction...');
+app.get('/current', async (req, res) => {
+	const params = new URLSearchParams(
+		{
+			grant_type: 'refresh_token',
+			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+		}).toString();
+	try {
+		const refreshAccessData = await getTokenFromSpotify(res, params) as {
+			access_token: string,
+			token_type: string,
+			refresh_token: string,
+			expires_in: number,
+		};
+		let { access_token, token_type } = refreshAccessData;
+		const currentTrackData = await getCurrentTrack(access_token, token_type);
+		res.send(currentTrackData);
+	} catch (e) {
+		res.send(e);
+	}
 });
 
 /**
  * Recently Played Tracks route handler.
  */
 app.get('/played', async (req, res) => {
-
-	// Grab access token from file.
-	const data = fs.readFileSync('secrets_expired.json', 'utf8');
-	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
-	let { access_token, token_type } = dataObj;
-	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-	console.log(recentlyPlayedData);
-
-	// If access token is expired, request new one.
-	if ('error' in recentlyPlayedData) {
-		const params = new URLSearchParams(
-			{
-				grant_type: 'refresh_token',
-				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
-			}).toString();
-		try {
-			const refreshAccessData = await getTokenFromSpotify(res, params) as {
-				access_token: string,
-				token_type: string,
-				refresh_token: string,
-				expires_in: number,
-			};
-			let { access_token, token_type } = refreshAccessData;
-			recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-			res.send(recentlyPlayedData);
-		} catch (e) {
-			res.send(e);
-		}
+	const params = new URLSearchParams(
+		{
+			grant_type: 'refresh_token',
+			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+		}).toString();
+	try {
+		const refreshAccessData = await getTokenFromSpotify(res, params) as {
+			access_token: string,
+			token_type: string,
+			refresh_token: string,
+			expires_in: number,
+		};
+		let { access_token, token_type } = refreshAccessData;
+		const recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+		res.send(recentlyPlayedData);
+	} catch (e) {
+		res.send(e);
 	}
 });
 
