@@ -10,7 +10,7 @@ dotenv.config();
 
 // Express server instance.
 const app = express();
-const port = 8888;
+const port = process.env.PORT || 8888;
 let state = null;
 
 /**
