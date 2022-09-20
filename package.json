@@ -5,9 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.ts",
-    "build": "npx tsc index.ts"
+    "start": "node index.cjs",
+    "dev": "nodemon index.cts",
+    "build": "npx tsc index.cts"
   },
   "keywords": [],
   "author": "",
