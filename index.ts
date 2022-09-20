@@ -1,16 +1,14 @@
-import * as express from 'express';
-import * as dotenv from 'dotenv';
-import fetch from 'node-fetch';
-import { Buffer } from 'buffer';
-import * as fs from 'fs';
-import { resolveSoa } from 'dns';
+const express = require('express');
+const dotenv = require('dotenv');
+const nodeFetch = require('node-fetch');
+const buffer = require('buffer');
+const fs = require('fs');
 
 // Import environment variables.
 dotenv.config();
 
 // Express server instance.
 const app = express();
-const port = process.env.PORT || 8888;
 let state = null;
 
 /**
@@ -35,7 +33,7 @@ const generateRandomString = (length) => {
  */
 const getTokenFromSpotify = async (res, params) => {
 	// Get access token from Spotify.
-	const response = await fetch('https://accounts.spotify.com/api/token', {
+	const response = await nodeFetch('https://accounts.spotify.com/api/token', {
 		method: 'post',
 		body: params,
 		headers: {
@@ -71,7 +69,7 @@ const getTokenFromSpotify = async (res, params) => {
  */
 const getRecentlyPlayed = async (access_token, token_type) => {
 	// Get information from Spotify using access token.
-	const response = await fetch('https://api.spotify.com/v1/me/player/recently-played', {
+	const response = await nodeFetch('https://api.spotify.com/v1/me/player/recently-played', {
 		headers: { Authorization: `${token_type} ${access_token}` }
 	});
 
@@ -211,6 +209,6 @@ app.get('/callback', async (req, res) => {
 });
 
 // Tell Express to listen for a connection on the specified port.
-app.listen(port, () => {
-	console.log(`Express app listening...`);
+app.listen(process.env.PORT, () => {
+	console.log(`Express app listening ${ 'DEV' === process.env.NODE_ENV ? 'http://localhost:' + process.env.PORT : 'https://metal-plays-spotify-proxy.herokuapp.com/'}...`);
 });

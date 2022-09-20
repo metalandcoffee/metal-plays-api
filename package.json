@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "homepage": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "start": "node index.cjs",
-    "dev": "nodemon index.cts",
-    "build": "npx tsc index.cts"
+    "start": "node index.js",
+    "dev": "nodemon index.ts",
+    "build": "npx tsc index.ts"
   },
   "keywords": [],
   "author": "",
