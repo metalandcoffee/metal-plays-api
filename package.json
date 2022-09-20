@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "nodemon index.ts",
-    "build": "npx tsc index.ts --outDir ./public"
+    "build": "npx tsc index.ts"
   },
   "keywords": [],
   "author": "",
