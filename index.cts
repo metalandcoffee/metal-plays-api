@@ -1,14 +1,16 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const nodeFetch = require('node-fetch');
-const buffer = require('buffer');
-const fs = require('fs');
+import express from 'express';
+import * as dotenv from 'dotenv';
+import fetch from 'node-fetch';
+import { Buffer } from 'buffer';
+import * as fs from 'fs';
+import { resolveSoa } from 'dns';
 
 // Import environment variables.
 dotenv.config();
 
 // Express server instance.
 const app = express();
+const port = 8888;
 let state = null;
 
 /**
@@ -33,7 +35,7 @@ const generateRandomString = (length) => {
  */
 const getTokenFromSpotify = async (res, params) => {
 	// Get access token from Spotify.
-	const response = await nodeFetch('https://accounts.spotify.com/api/token', {
+	const response = await fetch('https://accounts.spotify.com/api/token', {
 		method: 'post',
 		body: params,
 		headers: {
@@ -69,7 +71,7 @@ const getTokenFromSpotify = async (res, params) => {
  */
 const getRecentlyPlayed = async (access_token, token_type) => {
 	// Get information from Spotify using access token.
-	const response = await nodeFetch('https://api.spotify.com/v1/me/player/recently-played', {
+	const response = await fetch('https://api.spotify.com/v1/me/player/recently-played', {
 		headers: { Authorization: `${token_type} ${access_token}` }
 	});
 
@@ -109,16 +111,6 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 	return formattedJSON;
 }
 
-const getCurrentTrack = async (access_token, token_type) => {
-	// Get information from Spotify using access token.
-	const response = await nodeFetch('https://api.spotify.com/v1/me/player/currently-playing', {
-		headers: { Authorization: `${token_type} ${access_token}` }
-	});
-
-	const trackJsonObj = await response.json();
-	console.log(trackJsonObj);
-}
-
 // Index page route handler.
 app.get('/', (req, res) => {
 	res.send('Welcome to Metal Plays API!');
@@ -127,48 +119,41 @@ app.get('/', (req, res) => {
 /**
  * Currently Playing Track route handler.
  */
-app.get('/current', async (req, res) => {
-	const params = new URLSearchParams(
-		{
-			grant_type: 'refresh_token',
-			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
-		}).toString();
-	try {
-		const refreshAccessData = await getTokenFromSpotify(res, params) as {
-			access_token: string,
-			token_type: string,
-			refresh_token: string,
-			expires_in: number,
-		};
-		let { access_token, token_type } = refreshAccessData;
-		const currentTrackData = await getCurrentTrack(access_token, token_type);
-		res.send(currentTrackData);
-	} catch (e) {
-		res.send(e);
-	}
+app.get('/current', (req, res) => {
+	res.send('Under construction...');
 });
 
 /**
  * Recently Played Tracks route handler.
  */
 app.get('/played', async (req, res) => {
-	const params = new URLSearchParams(
-		{
-			grant_type: 'refresh_token',
-			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
-		}).toString();
-	try {
-		const refreshAccessData = await getTokenFromSpotify(res, params) as {
-			access_token: string,
-			token_type: string,
-			refresh_token: string,
-			expires_in: number,
-		};
-		let { access_token, token_type } = refreshAccessData;
-		const recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-		res.send(recentlyPlayedData);
-	} catch (e) {
-		res.send(e);
+
+	// Grab access token from file.
+	const data = fs.readFileSync('secrets_expired.json', 'utf8');
+	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
+	let { access_token, token_type } = dataObj;
+	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+
+	// If access token is expired, request new one.
+	if ('error' in recentlyPlayedData) {
+		const params = new URLSearchParams(
+			{
+				grant_type: 'refresh_token',
+				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+			}).toString();
+		try {
+			const refreshAccessData = await getTokenFromSpotify(res, params) as {
+				access_token: string,
+				token_type: string,
+				refresh_token: string,
+				expires_in: number,
+			};
+			let { access_token, token_type } = refreshAccessData;
+			recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+			res.send(recentlyPlayedData);
+		} catch (e) {
+			res.send(e);
+		}
 	}
 });
 
@@ -226,6 +211,6 @@ app.get('/callback', async (req, res) => {
 });
 
 // Tell Express to listen for a connection on the specified port.
-app.listen(process.env.PORT, () => {
-	console.log(`Express app listening ${ 'DEV' === process.env.NODE_ENV ? 'http://localhost:' + process.env.PORT : 'https://metal-plays-spotify-proxy.herokuapp.com/'}...`);
+app.listen(port, () => {
+	console.log(`Express app listening at http://localhost:${port}`);
 });
