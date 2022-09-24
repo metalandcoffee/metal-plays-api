@@ -3,14 +3,14 @@ import * as dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import { Buffer } from 'buffer';
 import * as fs from 'fs';
-import { resolveSoa } from 'dns';
+import { Current, Artist } from './spotify.current.models';
 
 // Import environment variables.
 dotenv.config();
 
 // Express server instance.
 const app = express();
-const port = 8888;
+const port = process.env.PORT;
 let state = null;
 
 /**
@@ -111,6 +111,37 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 	return formattedJSON;
 }
 
+const getCurrentTrack = async (access_token, token_type) => {
+	// Get information from Spotify using access token.
+	const response = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+		headers: { Authorization: `${token_type} ${access_token}` }
+	});
+
+	const tracksJsonObj = await response.json() as Current;
+
+	const tmp = [
+		{name: "Metal & Coffee"},
+		{name: "Metallica"},
+		{name: "Opeth"}
+	];
+
+	// Generate array of just artists' names.
+	const allArtists = tracksJsonObj.item.artists.reduce((previous: string[], currentValue: Artist): string[] => {
+		previous.push(currentValue.name);
+		return previous;
+	  }, []);
+
+	// Format the data to look pretty.
+	return {
+		artists: allArtists.join(','),
+		trackName: tracksJsonObj.item.name,
+		currentTimestamp: tracksJsonObj.progress_ms,
+		songDuration: tracksJsonObj.item.duration_ms,
+		songPreviewURL: tracksJsonObj.item.external_urls.spotify,
+	};
+
+}
+
 // Index page route handler.
 app.get('/', (req, res) => {
 	res.send('Welcome to Metal Plays API!');
@@ -119,41 +150,48 @@ app.get('/', (req, res) => {
 /**
  * Currently Playing Track route handler.
  */
-app.get('/current', (req, res) => {
-	res.send('Under construction...');
+app.get('/current', async (req, res) => {
+	const params = new URLSearchParams(
+		{
+			grant_type: 'refresh_token',
+			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+		}).toString();
+	try {
+		const refreshAccessData = await getTokenFromSpotify(res, params) as {
+			access_token: string,
+			token_type: string,
+			refresh_token: string,
+			expires_in: number,
+		};
+		let { access_token, token_type } = refreshAccessData;
+		const currentTrackData = await getCurrentTrack(access_token, token_type);
+		res.send(currentTrackData);
+	} catch (e) {
+		res.send(e);
+	}
 });
 
 /**
  * Recently Played Tracks route handler.
  */
 app.get('/played', async (req, res) => {
-
-	// Grab access token from file.
-	const data = fs.readFileSync('secrets_expired.json', 'utf8');
-	const dataObj = JSON.parse(data) as { access_token: string, token_type: string };
-	let { access_token, token_type } = dataObj;
-	let recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-
-	// If access token is expired, request new one.
-	if ('error' in recentlyPlayedData) {
-		const params = new URLSearchParams(
-			{
-				grant_type: 'refresh_token',
-				refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
-			}).toString();
-		try {
-			const refreshAccessData = await getTokenFromSpotify(res, params) as {
-				access_token: string,
-				token_type: string,
-				refresh_token: string,
-				expires_in: number,
-			};
-			let { access_token, token_type } = refreshAccessData;
-			recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
-			res.send(recentlyPlayedData);
-		} catch (e) {
-			res.send(e);
-		}
+	const params = new URLSearchParams(
+		{
+			grant_type: 'refresh_token',
+			refresh_token: process.env.SPOTIFY_REFRESH_TOKEN,
+		}).toString();
+	try {
+		const refreshAccessData = await getTokenFromSpotify(res, params) as {
+			access_token: string,
+			token_type: string,
+			refresh_token: string,
+			expires_in: number,
+		};
+		let { access_token, token_type } = refreshAccessData;
+		const recentlyPlayedData = await getRecentlyPlayed(access_token, token_type);
+		res.send(recentlyPlayedData);
+	} catch (e) {
+		res.send(e);
 	}
 });
 

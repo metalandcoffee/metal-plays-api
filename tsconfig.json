@@ -3,7 +3,8 @@
 	  "module": "ES6",
 	  "target": "ES6",
 	  "moduleResolution": "node",
-	  "sourceMap": true
+	  "sourceMap": true,
+	  "outDir": "build"
 	},
   "ts-node": {
     "esm": true
