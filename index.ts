@@ -111,6 +111,12 @@ const getRecentlyPlayed = async (access_token, token_type) => {
 	return formattedJSON;
 }
 
+/**
+ * 
+ * @param {string} access_token 
+ * @param {string} token_type 
+ * @returns 
+ */
 const getCurrentTrack = async (access_token, token_type) => {
 	// Get information from Spotify using access token.
 	const response = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
@@ -120,16 +126,16 @@ const getCurrentTrack = async (access_token, token_type) => {
 	const tracksJsonObj = await response.json() as Current;
 
 	const tmp = [
-		{name: "Metal & Coffee"},
-		{name: "Metallica"},
-		{name: "Opeth"}
+		{ name: "Metal & Coffee" },
+		{ name: "Metallica" },
+		{ name: "Opeth" }
 	];
 
 	// Generate array of just artists' names.
 	const allArtists = tracksJsonObj.item.artists.reduce((previous: string[], currentValue: Artist): string[] => {
 		previous.push(currentValue.name);
 		return previous;
-	  }, []);
+	}, []);
 
 	// Format the data to look pretty.
 	return {
